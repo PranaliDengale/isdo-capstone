@@ -122,6 +122,8 @@ def triage_ticket(ticket_number, short_description, description):
         }
     ]
 
+    classification = None   # filled in when Claude calls classify_ticket
+
     # Agentic loop
     while True:
         response = client.messages.create(
@@ -151,6 +153,7 @@ def triage_ticket(ticket_number, short_description, description):
                     result = handle_tool_call(block.name, block.input)
 
                     if block.name == "classify_ticket":
+                        classification = result
                         print(f"  → Category:    {result.get('category')}")
                         print(f"  → Priority:    {result.get('priority')}")
                         print(f"  → Assign To:   {result.get('assignment_group')}")
@@ -169,6 +172,10 @@ def triage_ticket(ticket_number, short_description, description):
         # max_tokens / refusal / anything else: stop instead of looping forever
         print(f"  ! Stopped with stop_reason={response.stop_reason}")
         break
+
+    # The orchestrator (Lab C6+) needs this - without it triage_node always got
+    # None and fell back to P3/Service-Desk, whatever Claude decided.
+    return classification
 
 # ── RUN ON SAMPLE TICKETS ─────────────────────────────────────────────────────
 
